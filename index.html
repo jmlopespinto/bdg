@@ -145,13 +145,13 @@ const cls=p=>p>1?"bd":p>.85?"wn":"";
 const inYear=e=>e.date.slice(0,4)==String(year);
 const inPeriod=e=>inYear(e)&&(month==0||+e.date.slice(5,7)==month);
 const sum=a=>a.reduce((s,e)=>s+e.amt,0);
-const budM=()=>Object.values(S.budgets).reduce((s,v)=>s+v,0);
+const budM=()=>Object.values(B()).reduce((s,v)=>s+v,0);
 
 function opts(){
-  const ys=new Set([now.getFullYear(),year,...S.expenses.map(e=>+e.date.slice(0,4))]);
+  const ys=new Set([2026,2027,2028,now.getFullYear(),year,...S.expenses.map(e=>+e.date.slice(0,4)),...Object.keys((S.plan&&S.plan.y)||{}).map(Number)]);
   $("year").innerHTML=[...ys].sort().map(y=>`<option ${y==year?"selected":""}>${y}</option>`).join("");
   $("month").innerHTML=`<option value="0" ${month==0?"selected":""}>Ano inteiro</option>`+MN.map((m,i)=>`<option value="${i+1}" ${month==i+1?"selected":""}>${m}</option>`).join("");
-  $("c").innerHTML=Object.keys(S.budgets).map(c=>`<option>${esc(c)}</option>`).join("");
+  $("c").innerHTML=Object.keys(B()).map(c=>`<option>${esc(c)}</option>`).join("");
 }
 
 function render(){
@@ -167,15 +167,15 @@ function render(){
     +`<div class="line" style="bottom:${budM()/max*118+22}px" title="Orçamento mensal ${eur(budM())}"></div>`;
 
   const f=month==0?12:1;
-  const names=Object.keys(S.budgets);
+  const names=Object.keys(B());
   $("cats").innerHTML=names.map(c=>{
-    const s=sum(per.filter(e=>e.cat==c)),b=S.budgets[c]*f,pc=b?s/b:(s>0?2:0),left=b-s;
+    const s=sum(per.filter(e=>e.cat==c)),b=B()[c]*f,pc=b?s/b:(s>0?2:0),left=b-s;
     return `<div class="cat"><div class="r"><span class="n">${esc(c)}</span>
       <span class="v ${left<0?"neg":""}">${eur(s)} de ${eur(b)} · ${left<0?"excedido "+eur(-left):"restam "+eur(left)}</span></div>
       <div class="bar"><i class="${cls(pc)}" style="width:${Math.min(pc,1)*100}%"></i></div>
-      <div class="row" style="margin-top:8px"><label class="v" for="b-${esc(c)}">Orçamento mensal</label><input class="bud" id="b-${esc(c)}" data-c="${esc(c)}" type="number" min="0" step="1" value="${S.budgets[c]}"> <span class="v">€</span></div></div>`;
+      <div class="row" style="margin-top:8px"><label class="v" for="b-${esc(c)}">Orçamento mensal</label><input class="bud" id="b-${esc(c)}" data-c="${esc(c)}" type="number" min="0" step="1" value="${B()[c]}"> <span class="v">€</span></div></div>`;
   }).join("");
-  const extra=[...new Set(per.map(e=>e.cat))].filter(c=>!(c in S.budgets));
+  const extra=[...new Set(per.map(e=>e.cat))].filter(c=>!(c in B()));
   if(extra.length)$("cats").insertAdjacentHTML("beforeend",extra.map(c=>`<div class="cat"><span class="n">${esc(c)}</span> <span class="v">(sem orçamento) ${eur(sum(per.filter(e=>e.cat==c)))}</span></div>`).join(""));
 
   const rows=[...per].sort((a,b)=>b.date.localeCompare(a.date));
@@ -186,8 +186,8 @@ function all(){opts();render();renderPlan()}
 $("year").onchange=e=>{year=+e.target.value;all()};
 $("month").onchange=e=>{month=+e.target.value;all()};
 $("months").onclick=e=>{const b=e.target.closest("[data-m]");if(b){month=+b.dataset.m;all()}};
-$("cats").onchange=e=>{const c=e.target.dataset.c;if(c!==undefined){S.budgets[c]=Math.max(0,+e.target.value||0);save();render()}};
-$("addcat").onclick=()=>{const n=$("newcat").value.trim();if(!n||n in S.budgets)return;S.budgets[n]=Math.max(0,+$("newbud").value||0);$("newcat").value=$("newbud").value="";save();all()};
+$("cats").onchange=e=>{const c=e.target.dataset.c;if(c!==undefined){B()[c]=Math.max(0,+e.target.value||0);save();render()}};
+$("addcat").onclick=()=>{const n=$("newcat").value.trim();if(!n||n in B())return;B()[n]=Math.max(0,+$("newbud").value||0);$("newcat").value=$("newbud").value="";save();all()};
 $("f").onsubmit=e=>{e.preventDefault();
   const d=$("d").value,a=+$("a").value;if(!d||!(a>0))return;
   S.expenses.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,5),date:d,cat:$("c").value,desc:$("t").value.trim(),amt:Math.round(a*100)/100});
@@ -199,21 +199,30 @@ let tab="mes";
 function showTab(){$("tab-mes").hidden=tab!="mes";$("tab-ano").hidden=tab!="ano";$("month").hidden=tab=="ano";document.querySelectorAll(".tab").forEach(b=>b.setAttribute("aria-selected",b.dataset.t==tab))}
 document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{tab=b.dataset.t;showTab()});
 const Z=()=>Array(12).fill(0),N=()=>Array(12).fill(null);
-const P=()=>{S.plan=S.plan||{names:["João","Ela"],y:{}};return S.plan.y[year]||(S.plan.y[year]={init:[0,0],inc:[Z(),Z()],exp:[Z(),Z()],sh:Z(),imp:[Z(),Z()],real:[N(),N()]})};
-function fill(){const y=P(),a=l=>l.reduce((s,v)=>s+(v||0),0),est=[[],[]],cv={};
- for(let p=0;p<2;p++)for(let m=0;m<12;m++){const s=m?(y.real[p][m-1]??est[p][m-1]):y.init[p];est[p][m]=s+y.inc[p][m]-y.exp[p][m]-y.sh[m]/2-y.imp[p][m];cv[`st-${p}-${m}`]=s;cv[`es-${p}-${m}`]=est[p][m]}
+const blank=()=>({init:[null,null],inc:[Z(),Z()],exp:[Z(),Z()],sh:Z(),imp:[Z(),Z()],real:[N(),N()]});
+const PY=yy=>S.plan&&S.plan.y&&S.plan.y[yy];
+const minY=()=>Math.min(...Object.keys((S.plan&&S.plan.y)||{}).map(Number));
+function calcY(yy){const y=PY(yy)||blank(),r={st:[[],[]],est:[[],[]],auto:[0,0],close:[0,0]},pre=yy-1>=minY()?calcY(yy-1):null;
+ for(let p=0;p<2;p++){r.auto[p]=pre?pre.close[p]:0;
+  for(let m=0;m<12;m++){const s=m?(y.real[p][m-1]??r.est[p][m-1]):(y.init[p]??r.auto[p]);r.st[p][m]=s;r.est[p][m]=s+y.inc[p][m]-y.exp[p][m]-y.sh[m]/2-y.imp[p][m]}
+  r.close[p]=y.real[p][11]??r.est[p][11]}
+ return r}
+const B=()=>{S.bud=S.bud||{};if(!S.bud[year]){const ys=Object.keys(S.bud).map(Number).filter(v=>v<year).sort((a,b)=>a-b);S.bud[year]={...(ys.length?S.bud[ys.pop()]:S.budgets)}}return S.bud[year]};
+const P=()=>{S.plan=S.plan||{names:["João","Ela"],y:{}};return S.plan.y[year]||(S.plan.y[year]=blank())};
+function fill(){const y=P(),a=l=>l.reduce((s,v)=>s+(v||0),0),c=calcY(year),est=c.est,cv={};
+ for(let p=0;p<2;p++)for(let m=0;m<12;m++){cv[`st-${p}-${m}`]=c.st[p][m];cv[`es-${p}-${m}`]=est[p][m]}
  for(let m=0;m<12;m++){const r=[y.real[0][m],y.real[1][m]],ok=r[0]!=null&&r[1]!=null;cv[`sp-${m}`]=y.sh[m]/2;cv[`ce-${m}`]=est[0][m]+est[1][m];cv[`cr-${m}`]=ok?r[0]+r[1]:null;cv[`cd-${m}`]=ok?r[0]+r[1]-cv[`ce-${m}`]:null}
  for(let p=0;p<2;p++){["inc","exp","imp"].forEach(k=>cv[`t-${k}-${p}`]=a(y[k][p]));cv[`t-real-${p}`]=y.real[p].filter(v=>v!=null).pop()}
  cv["t-sh-0"]=a(y.sh);cv["t-sp"]=a(y.sh)/2;
- document.querySelectorAll("#plan [data-c]").forEach(el=>{const v=cv[el.dataset.c];el.textContent=v==null?"—":eur(v);el.classList.toggle("neg",v<0)})}
+ document.querySelectorAll("#plan [data-c]").forEach(el=>{const v=cv[el.dataset.c];el.textContent=v==null?"—":eur(v);el.classList.toggle("neg",v<0)});document.querySelectorAll('#plan [data-k="init"]').forEach(el=>{el.placeholder=String(Math.round(c.auto[+el.dataset.p]*100)/100)})}
 function renderPlan(){
  const y=P(),n=S.plan.names.map(esc),G={inc:"Rendimentos",exp:"Despesas",sh:"Despesas dos dois",imp:"Imprevistos",real:"Fim do mês real"};
  const cell=(k,p,m,v,l)=>`<td><input class="cell" type="number" step="0.01" placeholder="0" data-k="${k}" data-p="${p}" data-m="${m}" value="${k=="real"?(v==null?"":v):(v||"")}" aria-label="${G[k]} ${l} ${MN[m]}"></td>`;
  const rin=(l,k,p,arr,rep)=>`<tr><th scope="row">${l}${rep?` <button class="ghost rep" data-rep="${k}" data-p="${p}" title="Copiar o valor de jan para todos os meses">Repetir</button>`:""}</th>${arr.map((v,m)=>cell(k,p,m,v,l)).join("")}<td class="tot" data-c="t-${k}-${p}"></td></tr>`;
  const rc=(l,key,tk,b)=>`<tr${b?' class="b"':""}><th scope="row">${l}</th>${MN.map((_,m)=>`<td data-c="${key}-${m}"></td>`).join("")}<td class="tot"${tk?` data-c="${tk}"`:""}></td></tr>`;
  const grp=t=>`<tr class="grp"><th colspan="14"><span class="gs">${t}</span></th></tr>`;
- const who=p=>`<div class="who"><label>Nome<br><input data-name="${p}" value="${n[p]}"></label> <label>Dinheiro inicial (€)<br><input class="cell" style="width:120px" type="number" step="0.01" placeholder="0" data-k="init" data-p="${p}" value="${y.init[p]||""}" aria-label="Dinheiro inicial ${n[p]}"></label></div>`;
- $("plan").innerHTML=`<p class="sub" style="margin-top:0">Plano de ${year}. Cada pessoa paga 50% das despesas dos dois. O dinheiro de partida de cada mês é o valor real do mês anterior; se ainda não o preencheste, usa o previsto.</p>
+ const who=p=>`<div class="who"><label>Nome<br><input data-name="${p}" value="${n[p]}"></label> <label>Dinheiro inicial (€)<br><input class="cell" style="width:120px" type="number" step="0.01" placeholder="0" data-k="init" data-p="${p}" value="${y.init[p]==null?"":y.init[p]}" aria-label="Dinheiro inicial ${n[p]}"></label></div>`;
+ $("plan").innerHTML=`<p class="sub" style="margin-top:0">Plano de ${year}. Cada pessoa paga 50% das despesas dos dois. O dinheiro de partida de cada mês é o valor real do mês anterior; se ainda não o preencheste, usa o previsto. O dinheiro inicial, se o deixares vazio, é o saldo final do ano anterior (o valor que aparece a cinzento).</p>
  <div class="row" style="gap:28px">${who(0)}${who(1)}</div>
  <p class="hint">Desliza para o lado para ver os outros meses.</p>
  <div class="wrap" style="margin-top:8px"><table><thead><tr><th></th>${MN.map(m=>`<th>${m}</th>`).join("")}<th>Ano</th></tr></thead><tbody>
@@ -232,7 +241,7 @@ $("plan").onchange=e=>{const t=e.target,d=t.dataset;
  if(d.name!==undefined){S.plan.names[+d.name]=t.value.trim()||(d.name=="0"?"João":"Ela");save();renderPlan();return}
  if(d.k===undefined)return;
  const y=P(),v=t.value===""?null:+t.value,p=+d.p,m=+d.m;
- if(d.k=="init")y.init[p]=v||0;else if(d.k=="sh")y.sh[m]=v||0;else if(d.k=="real")y.real[p][m]=v;else y[d.k][p][m]=v||0;
+ if(d.k=="init")y.init[p]=v;else if(d.k=="sh")y.sh[m]=v||0;else if(d.k=="real")y.real[p][m]=v;else y[d.k][p][m]=v||0;
  save();fill()};
 $("plan").onclick=e=>{const k=e.target.dataset.rep;if(!k)return;const y=P(),p=+e.target.dataset.p,arr=k=="sh"?y.sh:y[k][p];arr.fill(arr[0]);save();renderPlan()};
 $("d").value=now.toISOString().slice(0,10);
