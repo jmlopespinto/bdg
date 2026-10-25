@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Orçamento">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#EEF3F4">
+<meta name="theme-color" content="#0F181B" media="(prefers-color-scheme: dark)">
+<title>Orçamento anual</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#EEF3F4;--sf:#FFFFFF;--ink:#16303A;--mu:#5B7078;--ln:#D3DEE1;--ok:#1F7A63;--wn:#B7791F;--bd:#B3363A;--ac:#1F7A63;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0F181B;--sf:#162327;--ink:#E3EEF0;--mu:#8FA6AC;--ln:#27404A;--ok:#4FB596;--wn:#E0A93B;--bd:#E26A6C;--ac:#4FB596;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0F181B;--sf:#162327;--ink:#E3EEF0;--mu:#8FA6AC;--ln:#27404A;--ok:#4FB596;--wn:#E0A93B;--bd:#E26A6C;--ac:#4FB596;color-scheme:dark}
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.5 "Bricolage Grotesque",system-ui,-apple-system,"Segoe UI",sans-serif;font-variant-numeric:tabular-nums}
+main{max-width:880px;margin:0 auto;padding:20px 16px 56px}
+h1,h2{margin:0;font-weight:800;letter-spacing:-.02em}
+h2{font-size:1.15rem;margin-bottom:12px}
+section{margin-top:32px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.top h1{font-size:1.1rem;font-weight:600;color:var(--mu)}
+select,input,button{font:inherit;color:var(--ink)}
+select,input{background:var(--sf);border:1px solid var(--ln);border-radius:8px;padding:8px 10px;min-width:0}
+button{background:var(--ink);color:var(--bg);border:0;border-radius:8px;padding:9px 14px;font-weight:600;cursor:pointer}
+button.ghost{background:transparent;color:var(--mu);border:1px solid var(--ln);padding:6px 10px;font-weight:400}
+:focus-visible{outline:3px solid var(--ac);outline-offset:2px}
+.hero{margin-top:20px}
+.big{font-size:clamp(2.6rem,10vw,4.6rem);font-weight:800;letter-spacing:-.04em;line-height:1}
+.sub{color:var(--mu);margin-top:6px}
+.bar{height:10px;border-radius:6px;background:var(--ln);overflow:hidden;margin-top:14px}
+.bar i{display:block;height:100%;background:var(--ok);border-radius:6px}
+.bar i.wn{background:var(--wn)}.bar i.bd{background:var(--bd)}
+.months{display:grid;grid-template-columns:repeat(12,1fr);gap:6px;align-items:end;height:150px;position:relative;margin-top:8px}
+.m{display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;background:none;border:0;padding:0;color:var(--mu);font-size:.75rem;gap:4px;border-radius:6px}
+.m b{display:block;width:100%;background:var(--ln);border-radius:4px 4px 0 0;min-height:2px}
+.m.ov b{background:var(--bd)}.m.ok b{background:var(--ok)}
+.m.sel{color:var(--ink);font-weight:600;box-shadow:0 2px 0 var(--ink)}
+.line{position:absolute;left:0;right:0;border-top:2px dashed var(--mu);opacity:.7;pointer-events:none}
+.cat{padding:12px 0;border-top:1px solid var(--ln)}
+.cat .r{display:flex;justify-content:space-between;gap:12px;align-items:baseline;flex-wrap:wrap}
+.cat .n{font-weight:600}
+.cat .v{color:var(--mu);font-size:.9rem}
+.cat .v.neg{color:var(--bd);font-weight:600}
+.cat .bar{margin-top:8px;height:8px}
+.bud{width:90px;text-align:right}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.add{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px}
+.add button{grid-column:1/-1}
+.mov{display:grid;grid-template-columns:70px 1fr auto auto;gap:10px;align-items:center;padding:9px 0;border-top:1px solid var(--ln)}
+.mov small{color:var(--mu)}
+.mov .a{font-weight:600}
+.empty{color:var(--mu);padding:14px 0}
+.tabs{display:flex;gap:6px;margin-top:16px;border-bottom:1px solid var(--ln)}
+.tab{background:none;color:var(--mu);border-radius:8px 8px 0 0;padding:10px 14px}
+.tab[aria-selected=true]{color:var(--ink);box-shadow:inset 0 -3px 0 var(--ink)}
+.wrap{overflow-x:auto;border:1px solid var(--ln);border-radius:10px;background:var(--sf)}
+table{border-collapse:collapse;min-width:1200px;width:100%;font-size:.9rem}
+th,td{padding:6px 8px;border-top:1px solid var(--ln);text-align:right;white-space:nowrap}
+thead th{color:var(--mu);font-weight:600;border-top:0}
+tbody th[scope=row]{text-align:left;position:sticky;left:0;background:var(--sf);font-weight:400;min-width:210px;z-index:1}
+.grp th{text-align:left;background:var(--bg);font-weight:800}
+.cell{width:84px;text-align:right;padding:5px 6px}
+tr.b td,tr.b th{font-weight:800}
+.tot{font-weight:600;background:var(--bg)}
+.neg{color:var(--bd)}
+.rep{padding:2px 6px;font-size:.75rem;margin-left:6px}
+.who input[data-name]{width:150px}
+.who label{font-size:.85rem;color:var(--mu)}
+textarea{width:100%;min-height:90px;background:var(--sf);color:var(--ink);border:1px solid var(--ln);border-radius:8px;padding:8px;font:12px/1.4 ui-monospace,monospace}
+html{-webkit-text-size-adjust:100%}
+.cell{font-size:16px}
+.hint{display:none;color:var(--mu);font-size:.85rem;margin:8px 0 0}
+.gs{display:inline-block;position:sticky;left:8px}
+.wrap{overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}
+@media (max-width:480px){
+ main{padding:12px max(12px,env(safe-area-inset-right)) 48px max(12px,env(safe-area-inset-left))}
+ button,select,input{min-height:44px}
+ .tab{flex:1;padding:12px 8px}
+ table{min-width:0;font-size:.82rem}
+ th,td{padding:5px 6px}
+ tbody th[scope=row]{min-width:0;width:112px;max-width:112px;white-space:normal;line-height:1.25}
+ .cell{width:78px;padding:4px 6px;min-height:40px}
+ .rep{display:block;margin:4px 0 0;min-height:30px}
+ .hint{display:block}
+ .mov{grid-template-columns:48px 1fr auto auto;gap:8px}
+ .mov button{min-height:36px}
+ .bud{width:84px}
+ .months{gap:3px}
+}
+</style>
+</head>
+<body>
+<main>
+  <div class="top">
+    <h1>Orçamento anual</h1>
+    <div class="row">
+      <select id="year" aria-label="Ano"></select>
+      <select id="month" aria-label="Período"></select>
+    </div>
+  </div>
+  <nav class="tabs" role="tablist"><button class="tab" role="tab" data-t="mes" aria-selected="true">Despesas do mês</button><button class="tab" role="tab" data-t="ano" aria-selected="false">Plano anual</button></nav>
+  <div id="tab-mes">
+  <div class="hero" id="hero"></div>
+  <section><h2>Mês a mês</h2><div class="months" id="months"></div></section>
+  <section><h2>Categorias</h2><div id="cats"></div>
+    <div class="row" style="margin-top:12px"><input id="newcat" placeholder="Nova categoria" aria-label="Nova categoria"><input id="newbud" type="number" min="0" step="1" placeholder="€/mês" aria-label="Orçamento mensal" style="width:100px"><button id="addcat">Adicionar categoria</button></div>
+  </section>
+  <section><h2>Nova despesa</h2>
+    <form id="f" class="add">
+      <input type="date" id="d" required aria-label="Data">
+      <select id="c" aria-label="Categoria"></select>
+      <input id="t" placeholder="Descrição (opcional)" aria-label="Descrição">
+      <input id="a" type="number" min="0.01" step="0.01" placeholder="Valor em €" required aria-label="Valor">
+      <button type="submit">Guardar despesa</button>
+    </form>
+  </section>
+  <section><h2>Movimentos</h2><div id="list"></div></section>
+  <section><h2>Cópia de segurança</h2>
+    <p class="sub" style="margin-top:0">Os dados ficam guardados neste navegador. Copia o texto abaixo para teres uma cópia, e cola-o aqui para restaurar.</p>
+    <textarea id="bk" aria-label="Dados em JSON"></textarea>
+    <div class="row" style="margin-top:8px"><button class="ghost" id="gen">Gerar cópia</button><button class="ghost" id="rest">Restaurar a partir do texto</button><span class="sub" id="msg"></span></div>
+  </section>
+  </div>
+  <div id="tab-ano" hidden><h2 style="margin-top:24px">Plano anual</h2><div id="plan"></div></div>
+</main>
+<script>
+const KEY="orcamento-anual-v1";
+const SEED={"Alimentação":150,"Ginásio":20,"Padel":50,"Carro":200,"Subscrições":17,"Cuidados pessoais":32,"Restauração":200,"Imprevistos":100};
+const MN=["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
+let S=null;
+try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){}
+if(!S||!S.budgets||!Array.isArray(S.expenses))S={budgets:{...SEED},expenses:[]};
+const now=new Date();let year=now.getFullYear(),month=now.getMonth()+1;
+const $=id=>document.getElementById(id);
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+const eur=n=>n.toLocaleString("pt-PT",{style:"currency",currency:"EUR",minimumFractionDigits:0,maximumFractionDigits:2});
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const cls=p=>p>1?"bd":p>.85?"wn":"";
+const inYear=e=>e.date.slice(0,4)==String(year);
+const inPeriod=e=>inYear(e)&&(month==0||+e.date.slice(5,7)==month);
+const sum=a=>a.reduce((s,e)=>s+e.amt,0);
+const budM=()=>Object.values(S.budgets).reduce((s,v)=>s+v,0);
+
+function opts(){
+  const ys=new Set([now.getFullYear(),year,...S.expenses.map(e=>+e.date.slice(0,4))]);
+  $("year").innerHTML=[...ys].sort().map(y=>`<option ${y==year?"selected":""}>${y}</option>`).join("");
+  $("month").innerHTML=`<option value="0" ${month==0?"selected":""}>Ano inteiro</option>`+MN.map((m,i)=>`<option value="${i+1}" ${month==i+1?"selected":""}>${m}</option>`).join("");
+  $("c").innerHTML=Object.keys(S.budgets).map(c=>`<option>${esc(c)}</option>`).join("");
+}
+
+function render(){
+  const yr=S.expenses.filter(inYear),per=S.expenses.filter(inPeriod);
+  const annual=budM()*12,spent=sum(yr),p=annual?spent/annual:0;
+  $("hero").innerHTML=`<div class="big">${eur(spent)}</div>
+    <div class="sub">gastos em ${year} · de ${eur(annual)} orçamentados · ${spent>annual?"excedido em "+eur(spent-annual):"restam "+eur(annual-spent)}</div>
+    <div class="bar" role="progressbar" aria-valuenow="${Math.round(p*100)}" aria-valuemin="0" aria-valuemax="100"><i class="${cls(p)}" style="width:${Math.min(p,1)*100}%"></i></div>`;
+
+  const tot=MN.map((_,i)=>sum(yr.filter(e=>+e.date.slice(5,7)==i+1)));
+  const max=Math.max(budM()*1.25,...tot,1);
+  $("months").innerHTML=tot.map((v,i)=>`<button class="m ${v>budM()?"ov":v>0?"ok":""} ${month==i+1?"sel":""}" data-m="${i+1}" title="${MN[i]}: ${eur(v)}" aria-label="${MN[i]}: ${eur(v)}"><b style="height:${v/max*118}px"></b>${MN[i]}</button>`).join("")
+    +`<div class="line" style="bottom:${budM()/max*118+22}px" title="Orçamento mensal ${eur(budM())}"></div>`;
+
+  const f=month==0?12:1;
+  const names=Object.keys(S.budgets);
+  $("cats").innerHTML=names.map(c=>{
+    const s=sum(per.filter(e=>e.cat==c)),b=S.budgets[c]*f,pc=b?s/b:(s>0?2:0),left=b-s;
+    return `<div class="cat"><div class="r"><span class="n">${esc(c)}</span>
+      <span class="v ${left<0?"neg":""}">${eur(s)} de ${eur(b)} · ${left<0?"excedido "+eur(-left):"restam "+eur(left)}</span></div>
+      <div class="bar"><i class="${cls(pc)}" style="width:${Math.min(pc,1)*100}%"></i></div>
+      <div class="row" style="margin-top:8px"><label class="v" for="b-${esc(c)}">Orçamento mensal</label><input class="bud" id="b-${esc(c)}" data-c="${esc(c)}" type="number" min="0" step="1" value="${S.budgets[c]}"> <span class="v">€</span></div></div>`;
+  }).join("");
+  const extra=[...new Set(per.map(e=>e.cat))].filter(c=>!(c in S.budgets));
+  if(extra.length)$("cats").insertAdjacentHTML("beforeend",extra.map(c=>`<div class="cat"><span class="n">${esc(c)}</span> <span class="v">(sem orçamento) ${eur(sum(per.filter(e=>e.cat==c)))}</span></div>`).join(""));
+
+  const rows=[...per].sort((a,b)=>b.date.localeCompare(a.date));
+  $("list").innerHTML=rows.length?rows.map(e=>`<div class="mov"><small>${e.date.slice(8)}/${e.date.slice(5,7)}</small><div>${esc(e.desc||e.cat)}<br><small>${esc(e.cat)}</small></div><span class="a">${eur(e.amt)}</span><button class="ghost" data-del="${e.id}" aria-label="Apagar despesa">Apagar</button></div>`).join(""):`<div class="empty">Ainda não há despesas neste período. Regista a primeira no formulário acima.</div>`;
+}
+
+function all(){opts();render();renderPlan()}
+$("year").onchange=e=>{year=+e.target.value;all()};
+$("month").onchange=e=>{month=+e.target.value;all()};
+$("months").onclick=e=>{const b=e.target.closest("[data-m]");if(b){month=+b.dataset.m;all()}};
+$("cats").onchange=e=>{const c=e.target.dataset.c;if(c!==undefined){S.budgets[c]=Math.max(0,+e.target.value||0);save();render()}};
+$("addcat").onclick=()=>{const n=$("newcat").value.trim();if(!n||n in S.budgets)return;S.budgets[n]=Math.max(0,+$("newbud").value||0);$("newcat").value=$("newbud").value="";save();all()};
+$("f").onsubmit=e=>{e.preventDefault();
+  const d=$("d").value,a=+$("a").value;if(!d||!(a>0))return;
+  S.expenses.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,5),date:d,cat:$("c").value,desc:$("t").value.trim(),amt:Math.round(a*100)/100});
+  $("t").value=$("a").value="";save();year=+d.slice(0,4);if(month!=0)month=+d.slice(5,7);all()};
+$("list").onclick=e=>{const id=e.target.dataset.del;if(id){S.expenses=S.expenses.filter(x=>x.id!=id);save();render()}};
+$("gen").onclick=()=>{$("bk").value=JSON.stringify(S);$("bk").select();$("msg").textContent="Copia este texto e guarda-o num sítio seguro."};
+$("rest").onclick=()=>{try{const n=JSON.parse($("bk").value);if(!n.budgets||!Array.isArray(n.expenses))throw 0;S=n;save();all();$("msg").textContent="Dados restaurados."}catch(e){$("msg").textContent="Texto inválido: cola aqui a cópia gerada anteriormente."}};
+let tab="mes";
+function showTab(){$("tab-mes").hidden=tab!="mes";$("tab-ano").hidden=tab!="ano";$("month").hidden=tab=="ano";document.querySelectorAll(".tab").forEach(b=>b.setAttribute("aria-selected",b.dataset.t==tab))}
+document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{tab=b.dataset.t;showTab()});
+const Z=()=>Array(12).fill(0),N=()=>Array(12).fill(null);
+const P=()=>{S.plan=S.plan||{names:["João","Ela"],y:{}};return S.plan.y[year]||(S.plan.y[year]={init:[0,0],inc:[Z(),Z()],exp:[Z(),Z()],sh:Z(),imp:[Z(),Z()],real:[N(),N()]})};
+function fill(){const y=P(),a=l=>l.reduce((s,v)=>s+(v||0),0),est=[[],[]],cv={};
+ for(let p=0;p<2;p++)for(let m=0;m<12;m++){const s=m?(y.real[p][m-1]??est[p][m-1]):y.init[p];est[p][m]=s+y.inc[p][m]-y.exp[p][m]-y.sh[m]/2-y.imp[p][m];cv[`st-${p}-${m}`]=s;cv[`es-${p}-${m}`]=est[p][m]}
+ for(let m=0;m<12;m++){const r=[y.real[0][m],y.real[1][m]],ok=r[0]!=null&&r[1]!=null;cv[`sp-${m}`]=y.sh[m]/2;cv[`ce-${m}`]=est[0][m]+est[1][m];cv[`cr-${m}`]=ok?r[0]+r[1]:null;cv[`cd-${m}`]=ok?r[0]+r[1]-cv[`ce-${m}`]:null}
+ for(let p=0;p<2;p++){["inc","exp","imp"].forEach(k=>cv[`t-${k}-${p}`]=a(y[k][p]));cv[`t-real-${p}`]=y.real[p].filter(v=>v!=null).pop()}
+ cv["t-sh-0"]=a(y.sh);cv["t-sp"]=a(y.sh)/2;
+ document.querySelectorAll("#plan [data-c]").forEach(el=>{const v=cv[el.dataset.c];el.textContent=v==null?"—":eur(v);el.classList.toggle("neg",v<0)})}
+function renderPlan(){
+ const y=P(),n=S.plan.names.map(esc),G={inc:"Rendimentos",exp:"Despesas",sh:"Despesas dos dois",imp:"Imprevistos",real:"Fim do mês real"};
+ const cell=(k,p,m,v,l)=>`<td><input class="cell" type="number" step="0.01" placeholder="0" data-k="${k}" data-p="${p}" data-m="${m}" value="${k=="real"?(v==null?"":v):(v||"")}" aria-label="${G[k]} ${l} ${MN[m]}"></td>`;
+ const rin=(l,k,p,arr,rep)=>`<tr><th scope="row">${l}${rep?` <button class="ghost rep" data-rep="${k}" data-p="${p}" title="Copiar o valor de jan para todos os meses">Repetir</button>`:""}</th>${arr.map((v,m)=>cell(k,p,m,v,l)).join("")}<td class="tot" data-c="t-${k}-${p}"></td></tr>`;
+ const rc=(l,key,tk,b)=>`<tr${b?' class="b"':""}><th scope="row">${l}</th>${MN.map((_,m)=>`<td data-c="${key}-${m}"></td>`).join("")}<td class="tot"${tk?` data-c="${tk}"`:""}></td></tr>`;
+ const grp=t=>`<tr class="grp"><th colspan="14"><span class="gs">${t}</span></th></tr>`;
+ const who=p=>`<div class="who"><label>Nome<br><input data-name="${p}" value="${n[p]}"></label> <label>Dinheiro inicial (€)<br><input class="cell" style="width:120px" type="number" step="0.01" placeholder="0" data-k="init" data-p="${p}" value="${y.init[p]||""}" aria-label="Dinheiro inicial ${n[p]}"></label></div>`;
+ $("plan").innerHTML=`<p class="sub" style="margin-top:0">Plano de ${year}. Cada pessoa paga 50% das despesas dos dois. O dinheiro de partida de cada mês é o valor real do mês anterior; se ainda não o preencheste, usa o previsto.</p>
+ <div class="row" style="gap:28px">${who(0)}${who(1)}</div>
+ <p class="hint">Desliza para o lado para ver os outros meses.</p>
+ <div class="wrap" style="margin-top:8px"><table><thead><tr><th></th>${MN.map(m=>`<th>${m}</th>`).join("")}<th>Ano</th></tr></thead><tbody>
+ ${grp("Dinheiro de partida do mês")}${[0,1].map(p=>rc(n[p],"st-"+p)).join("")}
+ ${grp("Rendimentos")}${[0,1].map(p=>rin(n[p],"inc",p,y.inc[p],1)).join("")}
+ ${grp("Despesas individuais")}${[0,1].map(p=>rin(n[p],"exp",p,y.exp[p],1)).join("")}
+ ${grp("Despesas dos dois")}${rin("Total dos dois","sh",0,y.sh,1)}${rc("Parte de cada (50%)","sp","t-sp")}
+ ${grp("Imprevistos")}${[0,1].map(p=>rin(n[p],"imp",p,y.imp[p],1)).join("")}
+ ${grp("Dinheiro no fim do mês – previsto")}${[0,1].map(p=>rc(n[p],"es-"+p,`es-${p}-11`,1)).join("")}
+ ${grp("Dinheiro no fim do mês – real (preenche no fim de cada mês)")}${[0,1].map(p=>rin(n[p],"real",p,y.real[p],0)).join("")}
+ ${grp("Os dois juntos")}${rc("Previsto","ce","ce-11")}${rc("Real","cr","cr-11")}${rc("Diferença (real − previsto)","cd","cd-11",1)}
+ </tbody></table></div>
+ <p class="sub">Na coluna Ano, as linhas de rendimentos, despesas e imprevistos mostram o total do ano; as linhas de saldo mostram o valor de dezembro (ou do último mês preenchido, no caso do real).</p>`;
+ fill()}
+$("plan").onchange=e=>{const t=e.target,d=t.dataset;
+ if(d.name!==undefined){S.plan.names[+d.name]=t.value.trim()||(d.name=="0"?"João":"Ela");save();renderPlan();return}
+ if(d.k===undefined)return;
+ const y=P(),v=t.value===""?null:+t.value,p=+d.p,m=+d.m;
+ if(d.k=="init")y.init[p]=v||0;else if(d.k=="sh")y.sh[m]=v||0;else if(d.k=="real")y.real[p][m]=v;else y[d.k][p][m]=v||0;
+ save();fill()};
+$("plan").onclick=e=>{const k=e.target.dataset.rep;if(!k)return;const y=P(),p=+e.target.dataset.p,arr=k=="sh"?y.sh:y[k][p];arr.fill(arr[0]);save();renderPlan()};
+$("d").value=now.toISOString().slice(0,10);
+all();
+</script>
+</body>
+</html>
