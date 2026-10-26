@@ -93,6 +93,15 @@ html{-webkit-text-size-adjust:100%}
  .bud{width:84px}
  .months{gap:3px}
 }
+.tab{line-height:1.2}
+.lab span{font-size:.85rem;color:var(--mu)}
+.erow{display:grid;grid-template-columns:1fr 120px 76px 44px;gap:8px;align-items:center;padding:10px 0;border-top:1px solid var(--ln)}
+.erow .cell,.erow .en{width:100%}
+.erow .bar{grid-column:1/-1;margin-top:2px;height:6px}
+.erow.tot{grid-template-columns:1fr auto;font-weight:600}
+.erow .ghost{padding:6px 0;min-height:40px}
+.ep{text-align:right;font-weight:600}
+@media (max-width:480px){.tab{font-size:.88rem;padding:12px 4px}.erow{grid-template-columns:1fr 92px 60px 40px;gap:6px}}
 </style>
 </head>
 <body>
@@ -104,7 +113,7 @@ html{-webkit-text-size-adjust:100%}
       <select id="month" aria-label="Período"></select>
     </div>
   </div>
-  <nav class="tabs" role="tablist"><button class="tab" role="tab" data-t="mes" aria-selected="true">Despesas do mês</button><button class="tab" role="tab" data-t="ano" aria-selected="false">Plano anual</button></nav>
+  <nav class="tabs" role="tablist"><button class="tab" role="tab" data-t="mes" aria-selected="true">Despesas do mês</button><button class="tab" role="tab" data-t="ano" aria-selected="false">Plano anual</button><button class="tab" role="tab" data-t="esf" aria-selected="false">Taxa de esforço</button></nav>
   <div id="tab-mes">
   <div class="hero" id="hero"></div>
   <section><h2>Mês a mês</h2><div class="months" id="months"></div></section>
@@ -128,6 +137,7 @@ html{-webkit-text-size-adjust:100%}
   </section>
   </div>
   <div id="tab-ano" hidden><h2 style="margin-top:24px">Plano anual</h2><div id="plan"></div></div>
+  <div id="tab-esf" hidden><h2 style="margin-top:24px">Taxa de esforço</h2><div id="esf"></div></div>
 </main>
 <script>
 const KEY="orcamento-anual-v1";
@@ -182,7 +192,7 @@ function render(){
   $("list").innerHTML=rows.length?rows.map(e=>`<div class="mov"><small>${e.date.slice(8)}/${e.date.slice(5,7)}</small><div>${esc(e.desc||e.cat)}<br><small>${esc(e.cat)}</small></div><span class="a">${eur(e.amt)}</span><button class="ghost" data-del="${e.id}" aria-label="Apagar despesa">Apagar</button></div>`).join(""):`<div class="empty">Ainda não há despesas neste período. Regista a primeira no formulário acima.</div>`;
 }
 
-function all(){opts();render();renderPlan()}
+function all(){opts();render();renderPlan();renderEsf()}
 $("year").onchange=e=>{year=+e.target.value;all()};
 $("month").onchange=e=>{month=+e.target.value;all()};
 $("months").onclick=e=>{const b=e.target.closest("[data-m]");if(b){month=+b.dataset.m;all()}};
@@ -196,7 +206,7 @@ $("list").onclick=e=>{const id=e.target.dataset.del;if(id){S.expenses=S.expenses
 $("gen").onclick=()=>{$("bk").value=JSON.stringify(S);$("bk").select();$("msg").textContent="Copia este texto e guarda-o num sítio seguro."};
 $("rest").onclick=()=>{try{const n=JSON.parse($("bk").value);if(!n.budgets||!Array.isArray(n.expenses))throw 0;S=n;save();all();$("msg").textContent="Dados restaurados."}catch(e){$("msg").textContent="Texto inválido: cola aqui a cópia gerada anteriormente."}};
 let tab="mes";
-function showTab(){$("tab-mes").hidden=tab!="mes";$("tab-ano").hidden=tab!="ano";$("month").hidden=tab=="ano";document.querySelectorAll(".tab").forEach(b=>b.setAttribute("aria-selected",b.dataset.t==tab))}
+function showTab(){$("tab-mes").hidden=tab!="mes";$("tab-ano").hidden=tab!="ano";$("tab-esf").hidden=tab!="esf";$("month").hidden=tab!="mes";$("year").hidden=tab=="esf";document.querySelectorAll(".tab").forEach(b=>b.setAttribute("aria-selected",b.dataset.t==tab))}
 document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{tab=b.dataset.t;showTab()});
 const Z=()=>Array(12).fill(0),N=()=>Array(12).fill(null);
 const blank=()=>({init:[null,null],inc:[Z(),Z()],exp:[Z(),Z()],sh:Z(),imp:[Z(),Z()],real:[N(),N()]});
@@ -244,6 +254,26 @@ $("plan").onchange=e=>{const t=e.target,d=t.dataset;
  if(d.k=="init")y.init[p]=v;else if(d.k=="sh")y.sh[m]=v||0;else if(d.k=="real")y.real[p][m]=v;else y[d.k][p][m]=v||0;
  save();fill()};
 $("plan").onclick=e=>{const k=e.target.dataset.rep;if(!k)return;const y=P(),p=+e.target.dataset.p,arr=k=="sh"?y.sh:y[k][p];arr.fill(arr[0]);save();renderPlan()};
+const E=()=>S.esf||(S.esf={inc:3000,lim:35,rows:[{n:"Casa",v:800},{n:"Despesas casa",v:0},{n:"Carro",v:300},{n:"Investimentos",v:0},{n:"Outros",v:0}]});
+const fp=x=>x.toLocaleString("pt-PT",{minimumFractionDigits:1,maximumFractionDigits:1})+"%";
+const rate=(v,i)=>i>0?fp(v/i*100):"—";
+function renderEsf(){const e=E();
+ $("esf").innerHTML=`<p class="sub" style="margin-top:0">Taxa de esforço = custo mensal ÷ rendimento mensal do agregado. Podes alterar todos os valores e os nomes das linhas, e acrescentar ou remover linhas.</p>
+ <div class="row" style="gap:20px;align-items:flex-end"><label class="lab"><span>Rendimento mensal do agregado (€)</span><br><input class="cell" style="width:170px" type="number" min="0" step="1" data-e="inc" value="${e.inc}"></label>
+ <label class="lab"><span>Limite de referência (%)</span><br><input class="cell" style="width:130px" type="number" min="0" max="100" step="1" data-e="lim" value="${e.lim}"></label></div>
+ <div style="margin-top:16px">${e.rows.map((r,i)=>`<div class="erow"><input class="en" data-e="n" data-i="${i}" value="${esc(r.n)}" aria-label="Nome da linha ${i+1}"><input class="cell" type="number" min="0" step="0.01" placeholder="0" data-e="v" data-i="${i}" value="${r.v||""}" aria-label="Custo mensal de ${esc(r.n)}"><span class="ep" data-ep="${i}"></span><button class="ghost" data-edel="${i}" aria-label="Remover ${esc(r.n)}">✕</button><div class="bar"><i data-eb="${i}"></i></div></div>`).join("")}</div>
+ <button class="ghost" id="eadd" style="margin-top:8px">Adicionar linha</button>
+ <div id="etot"></div>`;
+ efill()}
+function efill(){const e=E(),t=e.rows.reduce((s,r)=>s+(+r.v||0),0),p=e.inc>0?t/e.inc*100:0;
+ e.rows.forEach((r,i)=>{const sp=document.querySelector(`#esf [data-ep="${i}"]`),b=document.querySelector(`#esf [data-eb="${i}"]`),x=e.inc>0?(+r.v||0)/e.inc*100:0;if(sp)sp.textContent=rate(+r.v||0,e.inc);if(b)b.style.width=Math.min(x,100)+"%"});
+ $("etot").innerHTML=`<div class="erow tot"><span>Total de custos mensais</span><b>${eur(t)}</b></div><div class="hero"><div class="big">${e.inc>0?fp(p):"—"}</div><div class="sub">taxa de esforço total${e.inc>0?` · ${p>e.lim?"acima":"dentro"} do limite de referência de ${e.lim}%`:""} · ${e.inc>=t?"sobram "+eur(e.inc-t):"faltam "+eur(t-e.inc)} por mês</div><div class="bar"><i class="${cls(e.lim>0?p/e.lim:(p>0?2:0))}" style="width:${Math.min(p,100)}%"></i></div></div>`}
+$("esf").oninput=ev=>{const t=ev.target,d=t.dataset,e=E();
+ if(d.e=="inc")e.inc=Math.max(0,+t.value||0);else if(d.e=="lim")e.lim=Math.max(0,+t.value||0);else if(d.e=="n")e.rows[+d.i].n=t.value;else if(d.e=="v")e.rows[+d.i].v=Math.max(0,+t.value||0);else return;
+ save();efill()};
+$("esf").onclick=ev=>{const t=ev.target,e=E();
+ if(t.id=="eadd"){e.rows.push({n:"Nova linha",v:0});save();renderEsf()}
+ else if(t.dataset.edel!==undefined){e.rows.splice(+t.dataset.edel,1);save();renderEsf()}};
 $("d").value=now.toISOString().slice(0,10);
 all();
 </script>
